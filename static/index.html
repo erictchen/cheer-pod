@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CheerPod — Cheer Stunt Group Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Main Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">🤸‍♀️</div>
+        <div>
+          <h1 class="brand-title">CheerPod</h1>
+          <p class="brand-tagline">Smart Cheer Stunt Group & Pod Generator</p>
+        </div>
+      </div>
+      
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" id="tabGeneratorBtn" onclick="switchTab('generator')">
+          <span class="tab-icon">⚡</span>
+          <span>Stunt Generator</span>
+        </button>
+        <button class="nav-tab" id="tabRosterBtn" onclick="switchTab('roster')">
+          <span class="tab-icon">📋</span>
+          <span>Athlete Database</span>
+          <span class="badge" id="rosterCountBadge">0</span>
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openQrModal()" title="Connect phone or iPad via QR code">
+          <span>📱 Phone / iPad QR</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="resetDemoData()" title="Reset to sample cheer squad">
+          <span>🔄 Reset Demo Squad</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: STUNT GENERATOR VIEW -->
+    <main id="generatorView" class="tab-content active">
+      <!-- Top Overview Bar -->
+      <section class="attendance-summary-card">
+        <div class="summary-left">
+          <div class="stat-main">
+            <span class="stat-number" id="checkedCount">0</span>
+            <span class="stat-total" id="totalCount">/ 0</span>
+            <span class="stat-label">Athletes Present</span>
+          </div>
+          <div class="role-pill-group" id="rolePillGroup">
+            <span class="role-pill pill-flyer"><span class="dot"></span><b id="countFlyer">0</b> Flyers</span>
+            <span class="role-pill pill-base"><span class="dot"></span><b id="countBase">0</b> Bases</span>
+            <span class="role-pill pill-backspot"><span class="dot"></span><b id="countBackspot">0</b> Backspots</span>
+            <span class="role-pill pill-front"><span class="dot"></span><b id="countFront">0</b> Fronts</span>
+          </div>
+        </div>
+
+        <div class="summary-right">
+          <div class="pod-readiness-badge" id="podReadinessBadge">
+            <span class="readiness-icon">✨</span>
+            <span id="podReadinessText">Check off athletes to begin</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Generator Settings & Action Bar -->
+      <section class="generator-controls-bar">
+        <div class="controls-group">
+          <!-- Skill Mode -->
+          <div class="control-item">
+            <label class="control-label" for="modeSelect">Skill Strategy</label>
+            <div class="segmented-control" id="modeControl">
+              <button class="segment-btn active" data-mode="balanced" onclick="setMode('balanced')">
+                <span>⚖️ Balanced</span>
+                <small>Equal skill per pod</small>
+              </button>
+              <button class="segment-btn" data-mode="stacked" onclick="setMode('stacked')">
+                <span>🏆 Stacked</span>
+                <small>Elite tiers first</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- Group Size -->
+          <div class="control-item">
+            <label class="control-label" for="sizeSelect">Pod Sizing</label>
+            <select id="sizeSelect" class="form-select" onchange="updateReadiness()">
+              <option value="auto" selected>Auto-Fit (Ideally 4, flex 5/3)</option>
+              <option value="strict4">Strict 4-Person Pods (Standard)</option>
+              <option value="strict5">5-Person Pods (with Front Spot)</option>
+              <option value="triads">Triads (3-Person)</option>
+              <option value="partner">Partner Stunts (2-Person)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="generate-cta-box">
+          <button class="btn btn-primary btn-generate" id="generateBtn" onclick="generateGroups()">
+            <span class="btn-sparkle">✨</span>
+            <span>Generate Stunt Groups</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Main Layout: Check-in List & Generated Pods Results -->
+      <div class="generator-split-layout">
+        <!-- LEFT: Attendance Checklist -->
+        <section class="checklist-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Check-in Attendance</h2>
+              <p class="panel-subtitle">Check athletes who are present for today's practice</p>
+            </div>
+            <div class="quick-check-actions">
+              <button class="btn btn-ghost btn-xs" onclick="selectAll(true)">Check All</button>
+              <button class="btn btn-ghost btn-xs" onclick="selectAll(false)">Clear All</button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="filter-bar">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="athleteSearch" placeholder="Filter by athlete name..." oninput="filterAthletes()">
+            </div>
+            <div class="role-filter-chips">
+              <button class="chip-filter active" data-role="ALL" onclick="setRoleFilter('ALL')">All</button>
+              <button class="chip-filter" data-role="Flyer" onclick="setRoleFilter('Flyer')">Flyers</button>
+              <button class="chip-filter" data-role="Base" onclick="setRoleFilter('Base')">Bases</button>
+              <button class="chip-filter" data-role="Backspot" onclick="setRoleFilter('Backspot')">Backspots</button>
+              <button class="chip-filter" data-role="Front Spot" onclick="setRoleFilter('Front Spot')">Fronts</button>
+            </div>
+          </div>
+
+          <!-- Athletes Check-in Grid -->
+          <div class="athletes-check-grid" id="athletesCheckGrid">
+            <!-- Populated dynamically by app.js -->
+            <div class="empty-loading">Loading athletes from database...</div>
+          </div>
+        </section>
+
+        <!-- RIGHT: Generated Pods Results -->
+        <section class="results-panel" id="resultsPanel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Generated Stunt Groups</h2>
+              <p class="panel-subtitle" id="resultsSubtitle">Click "Generate Stunt Groups" above to build pods</p>
+            </div>
+            <div class="results-actions" id="resultsActions" style="display: none;">
+              <button class="btn btn-secondary btn-sm" onclick="copyPodsToClipboard()" title="Copy roster for messaging">
+                <span>📋 Copy Roster</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="window.print()" title="Print mat sheet">
+                <span>🖨️ Print</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Notification / Advice Box -->
+          <div id="coachAdviceBox" class="coach-advice-box" style="display: none;"></div>
+
+          <!-- Pods Container -->
+          <div class="pods-container" id="podsContainer">
+            <div class="results-placeholder">
+              <div class="placeholder-icon">🤸‍♂️</div>
+              <h3>Ready to Form Stunt Pods</h3>
+              <p>Check off the present athletes on the left, then click <strong>Generate Stunt Groups</strong>.</p>
+              <ul class="guidelines-list">
+                <li>🎯 <strong>Target size:</strong> Standard 4 athletes per pod (Flyer, Main Base, Side Base, Backspot).</li>
+                <li>⚙️ <strong>Smart matching:</strong> Grouped automatically based on your roster parameters behind the scenes.</li>
+                <li>📋 <strong>Clean rosters:</strong> Group assignments ready for practice and sharing with athletes.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Unassigned / Alternates Section -->
+          <div id="unassignedContainer" class="unassigned-container" style="display: none;">
+            <div class="unassigned-header">
+              <span class="unassigned-icon">🪑</span>
+              <h3>Bench / Alternates</h3>
+              <span class="badge" id="unassignedCountBadge">0</span>
+            </div>
+            <p class="unassigned-desc">Athletes not placed into a full stunt pod for this rotation:</p>
+            <div class="unassigned-grid" id="unassignedGrid"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- TAB 2: ROSTER DATABASE VIEW -->
+    <main id="rosterView" class="tab-content">
+      <section class="roster-header-card">
+        <div class="roster-header-left">
+          <h2>Team Roster Database</h2>
+          <p>Manage cheer athletes, primary/secondary roles, heights, and skill ratings stored in the database.</p>
+        </div>
+        <div class="roster-header-right">
+          <button class="btn btn-primary" onclick="openAddAthleteModal()">
+            <span>➕ Add New Athlete</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Roster Table / Card View -->
+      <section class="roster-table-section">
+        <div class="roster-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="rosterSearch" placeholder="Search roster by name, role, or notes..." oninput="filterRosterTable()">
+          </div>
+          <div class="roster-stats">
+            <span id="rosterTotalLabel">20 Athletes on File</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="roster-table" id="rosterTable">
+            <thead>
+              <tr>
+                <th>Athlete Name</th>
+                <th>Primary Role</th>
+                <th>Secondary Roles</th>
+                <th>Height</th>
+                <th>Skill Rating</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rosterTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT ATHLETE -->
+  <dialog id="athleteModal" class="app-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Athlete to Roster</h3>
+        <button class="btn-close" onclick="closeAthleteModal()">✕</button>
+      </div>
+      
+      <form id="athleteForm" onsubmit="handleAthleteSubmit(event)">
+        <input type="hidden" id="editAthleteId" value="">
+
+        <div class="form-group">
+          <label for="athName" class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="athName" class="form-control" placeholder="e.g. Maya Lin" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="athPrimaryRole" class="form-label">Primary Role <span class="required">*</span></label>
+            <select id="athPrimaryRole" class="form-control" required>
+              <option value="Flyer">Flyer</option>
+              <option value="Main Base">Main Base</option>
+              <option value="Side Base">Side Base</option>
+              <option value="Backspot">Backspot</option>
+              <option value="Front Spot">Front Spot</option>
+            </select>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="athSecondaryRoles" class="form-label">Secondary / Flex Roles</label>
+            <input type="text" id="athSecondaryRoles" class="form-control" placeholder="e.g. Side Base, Backspot">
+            <small class="form-help">Comma-separated (e.g. Side Base, Main Base)</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label class="form-label">Height <span class="required">*</span></label>
+            <div class="height-input-pair">
+              <div class="input-with-unit">
+                <input type="number" id="athHeightFeet" class="form-control" min="4" max="7" value="5" required>
+                <span class="unit">ft</span>
+              </div>
+              <div class="input-with-unit">
+                <input type="number" id="athHeightInches" class="form-control" min="0" max="11.5" step="0.5" value="4" required>
+                <span class="unit">in</span>
+              </div>
+            </div>
+            <small class="form-help" id="totalHeightHelp">Total: 64.0 inches</small>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="athSkillLevel" class="form-label">Skill Level (1-5) <span class="required">*</span></label>
+            <select id="athSkillLevel" class="form-control" required>
+              <option value="1">1 — Novice / Fundamentals</option>
+              <option value="2">2 — Developing / Intermediate</option>
+              <option value="3" selected>3 — Solid Advanced Stunter</option>
+              <option value="4">4 — Elite / Stunt Leader</option>
+              <option value="5">5 — Master / Captain / Specialist</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="athNotes" class="form-label">Coach Notes / Stunt Specialty</label>
+          <textarea id="athNotes" class="form-control" rows="2" placeholder="e.g. Strong locked wrists, great cradle catch, working on arabesque"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="athIsActive" checked>
+            <span>Active on Squad (uncheck if injured/unavailable)</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAthleteModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveAthleteBtn">Save Athlete</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- MODAL: SWAP ATHLETE IN POD -->
+  <dialog id="swapModal" class="app-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Swap Athlete in Pod</h3>
+        <button class="btn-close" onclick="closeSwapModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <p id="swapModalPrompt">Select another athlete to swap with:</p>
+        <div class="swap-candidates-list" id="swapCandidatesList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeSwapModal()">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODAL: CONNECT PHONE / IPAD QR CODE -->
+  <dialog id="qrModal" class="app-modal">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div class="modal-header">
+        <h3>📱 Connect Phone or iPad</h3>
+        <button class="btn-close" onclick="closeQrModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.1rem;">
+        <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+          Point your iPhone or iPad Camera at this code to open the app directly on your device:
+        </p>
+        <div style="background: #ffffff; padding: 12px; border-radius: 16px; border: 1.5px solid var(--border-light); box-shadow: var(--shadow-sm); width: 230px; height: 230px; display: flex; align-items: center; justify-content: center;">
+          <img src="/qr_code.svg" alt="Scan QR Code to open CheerPod" style="width: 100%; height: 100%; border-radius: 8px;" />
+        </div>
+        <div style="background: var(--bg-subtle); padding: 0.65rem 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.88rem; font-weight: 700; color: var(--primary); word-break: break-all; width: 100%; display: flex; justify-content: space-between; align-items: center;">
+          <span id="qrUrlLabel">http://192.168.0.13:8000</span>
+          <button class="btn btn-ghost btn-xs" onclick="copyNetworkUrl()" title="Copy link">📋 Copy</button>
+        </div>
+        <div style="text-align: left; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; background: #f8fafc; border-radius: 8px; padding: 0.75rem 1rem; width: 100%;">
+          <div>📶 <b>Same Wi-Fi Required:</b> Ensure your device is on the same Wi-Fi as this Mac.</div>
+          <div style="margin-top: 0.35rem;">📲 <b>Full Screen App:</b> In Safari, tap <b>Share</b> > <b>Add to Home Screen</b> to use it like a native app.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" style="width: 100%;" onclick="closeQrModal()">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
